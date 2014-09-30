@@ -37,14 +37,14 @@ import java.util.*;
  * @version 1.0
  */
 @SuppressWarnings({"FieldMayBeFinal"})
-public class JWebClient implements Disposeable {
+public abstract class JWebClient implements Disposeable {
     
     /**
      * If a file is to be downloaded, this is the variable that stores its information.
      * @author Beatsleigher
      * @since 30-09-2014
      */
-    private final File dlPath;
+    private File dlPath;
     
     /**
      * This variable stores the URL (web address) from where the data/file/string will be downloaded from.
@@ -52,7 +52,7 @@ public class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private final URL dlSource;
+    private URL dlSource;
     
     /**
      * If a String-object is downloaded, this is where it'll be stored.
@@ -77,7 +77,7 @@ public class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private final List<Object> downloadProgressChangedEventHandlerList;
+    private List<Object> downloadProgressChangedEventHandlerList;
     
     /**
      * This list contains all of the event handlers for the onDownloadFileCompletedEvent-events.
@@ -85,7 +85,7 @@ public class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private final List<Object> downloadFileCompletedEventHandlerList;
+    private List<Object> downloadFileCompletedEventHandlerList;
     
     /**
      * This list contains all of the handlers for the onDownloadStringCompletedEvent-events.
@@ -93,7 +93,7 @@ public class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private final List<Object> downloadStringCompletedEventHandlerList;
+    private List<Object> downloadStringCompletedEventHandlerList;
     
     /**
      * This... you know what this list contains. If you don't, you really, <i>really</i> shouldn't be looking at this JavaDoc...
@@ -101,8 +101,9 @@ public class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private final List<Object> downloadDataCompletedEventHandlerList;
+    private List<Object> downloadDataCompletedEventHandlerList;
     
+    //<editor-fold defaultstate="collapsed" desc="Constructors">
     /**
      * The first of many constructors.
      * 
@@ -202,7 +203,94 @@ public class JWebClient implements Disposeable {
         this.downloadStringCompletedEventHandlerList = new ArrayList<>();
         this.downloadDataCompletedEventHandlerList = new ArrayList<>();
     }
-
+    
+    /**
+     * This constructor is as basic as they come.
+     * No parameters are required.
+     * After using this constructor, please make sure you set the respective properties for the method(s) you'd like to use.
+     */
+    public JWebClient() {
+        this.dlPath = null;
+        this.dlSource = null;
+        this.downloadProgressChangedEventHandlerList = new ArrayList<>();
+        this.downloadFileCompletedEventHandlerList = new ArrayList<>();
+        this.downloadStringCompletedEventHandlerList = new ArrayList<>();
+        this.downloadDataCompletedEventHandlerList = new ArrayList<>();
+    }
+    //</editor-fold>
+    
+    //<editor-fold defaultstate="collapsed" desc="Properties">
+    /**
+     * Gets and returns the download source (the URL from which the file/string/data is downloaded from).
+     * This method is also present in the different events provided with this class.
+     * Use those in-event methods when possible.
+     * @return The URL from which the file/string/data is downloaded from.
+     * @author Beatsleigher
+     * @since 30-09-2014
+     * @version 1.0
+     */
+    public URL getDownloadSource() { return dlSource; }
+    
+    /**
+     * Gets and returns the download path (the path on the computer where the file is downloaded to).
+     * E.G.: 
+     * /home/user01/downloadedfile.sh
+     * C:\Users\User01\Documents\downloadedFile.jpg
+     * This method is also present in the different events provided with this class.
+     * Use the in-event methods when possible.
+     * @return The download path on this computer as a {@see File} object.
+     * @author Beatsleigher
+     * @since 30-09-2014
+     * @version 1.0
+     */
+    public File getDownloadPath() { return dlPath; }
+    
+    /**
+     * Gets and returns the downloaded {@see String} object.
+     * This method should only be accessed when you're sure, that a string has been downloaded.
+     * This method is present in the events provided with this class.
+     * Use the in-event methods when possible.
+     * @return The downloaded string. If downloaded string is null, returns null.
+     * @author Beatsleigher
+     * @since 30-09-2014
+     * @version 1.0
+     */
+    public String getDownloadedString() { return downloadedString; }
+    
+    /**
+     * Gets and returns the downloaded data.
+     * Only use this method when you are sure, that data has been downloaded.
+     * This method is present in the events provided with this class and their use is preferred.
+     * @return The downloaded data as byte-array. If data is null, returns null.
+     * @author Beatsleigher
+     * @since 30-09-2014
+     * @version 1.0
+     */
+    public byte[] getDownloadedData() { return downloadedData; }
+    
+    /**
+     * Sets the {@see URL} object from which to download the file/string/data from.
+     * @param url The {@see URL} object from which to download from.
+     */
+    public void setDownloadSource(URL url) { this.dlSource = url; }
+    
+    /**
+     * Sets the {@see File} object to download the file to.
+     * @param path The {@see File} object from which to download the file to.
+     */
+    public void setDownloadPath(File path) { this.dlPath = path; }
+    //</editor-fold>
+    
+    //<editor-fold defaultstate="collapsed" desc="Event Processing Methods">
+    public abstract void addDownloadProgressChangedEventListener();
+    
+    public abstract void addDownloadFileCompletedEventListener();
+    
+    public abstract void addDownloadStringCompletedEventHandler();
+    
+    public abstract void addDownloadDataCompletedEventHandler();
+    //</editor-fold>
+    
     @Override
     public void dispose() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
