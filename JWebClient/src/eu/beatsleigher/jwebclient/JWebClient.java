@@ -20,6 +20,7 @@
 package eu.beatsleigher.jwebclient;
 
 import eu.beatsleigher.jwebclient.interfaces.Disposeable;
+import eu.beatsleigher.jwebclient.events.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -39,6 +40,7 @@ import java.util.*;
 @SuppressWarnings({"FieldMayBeFinal"})
 public abstract class JWebClient implements Disposeable {
     
+    //<editor-fold defaultstate="collapsed" desc="Properties">
     /**
      * If a file is to be downloaded, this is the variable that stores its information.
      * @author Beatsleigher
@@ -77,7 +79,7 @@ public abstract class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private List<Object> downloadProgressChangedEventHandlerList;
+    private List<DownloadProgressChangedEventListener> downloadProgressChangedEventHandlerList;
     
     /**
      * This list contains all of the event handlers for the onDownloadFileCompletedEvent-events.
@@ -102,6 +104,7 @@ public abstract class JWebClient implements Disposeable {
      * @version 1.0
      */
     private List<Object> downloadDataCompletedEventHandlerList;
+    //</editor-fold>
     
     //<editor-fold defaultstate="collapsed" desc="Constructors">
     /**
@@ -290,6 +293,52 @@ public abstract class JWebClient implements Disposeable {
     
     public abstract void addDownloadDataCompletedEventHandler();
     //</editor-fold>
+    
+    /**
+     * Downloads a file from the URL provided in the constructor 
+     * and saves it to the location provided in the constructor on to the local computer.
+     * @throws java.io.IOException This exception is thrown if something goes wrong during the download.
+     * @author Beatsleigher
+     * @since 30-09-2014
+     * @version 1.0
+     */
+    public void downloadFile() throws IOException {
+        HttpURLConnection httpConnect = null;
+        float totalDataRead;
+        BufferedInputStream bufferedIStream = null;
+        FileOutputStream fileOStream = null;
+        BufferedOutputStream bufferedOStream = null;
+        byte[] data = new byte[1024];
+        int i = 0;
+        float progressPercentage = 0;
+        long remoteSize = 0;
+        
+        try {
+            httpConnect = (HttpURLConnection)dlSource.openConnection();
+            totalDataRead = 0;
+            remoteSize = httpConnect.getContentLengthLong();
+            
+            bufferedIStream = new BufferedInputStream(httpConnect.getInputStream());
+            fileOStream = new FileOutputStream(dlPath);
+            bufferedOStream = new BufferedOutputStream(fileOStream, 1024);
+            
+            // Download file
+            while ((i = bufferedIStream.read(data, 0, 1024)) >= 0) {
+                totalDataRead += i;
+                bufferedOStream.write(data, 0, i);
+                progressPercentage = (totalDataRead / remoteSize) * 100;
+                for (DownloadProgressChangedEventListener evt : this.downloadProgressChangedEventHandlerList)
+                    evt.onDownloadProgressChanged(
+                            new DownloadProgressChangedEvent(this, dlSource, dlPath, progressPercentage, remoteSize, (long)totalDataRead));
+            }
+        } finally {
+            bufferedIStream.close();
+            fileOStream.close();
+            bufferedIStream.close();
+            //for (DownloadFinishedEventListener evt : dlFinishedEventList)
+                //evt.onDownloadFinished(new DownloadFinishedEvent(this, dlPath));
+        }
+    }
     
     @Override
     public void dispose() {
