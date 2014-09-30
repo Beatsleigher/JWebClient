@@ -31,12 +31,21 @@ import java.util.*;
  */
 public class DownloadProgressChangedEvent extends EventObject {
     
-    private final URL downloadSource;
-    private final File downloadPath;
-    private final float progressPercentage;
-    private final long sourceSize;
-    private final long fileSize;
+    protected final URL downloadSource;
+    protected final File downloadPath;
+    protected final float progressPercentage;
+    protected final long sourceSize;
+    protected final long fileSize;
 
+    /**
+     * Default constructor.
+     * @param source The calling object.
+     * @param downloadSource The URL from which data is downloaded from.
+     * @param downloadPath The path on the local machine where the file is downloaded to.
+     * @param progressPercentage The current progress of the download.
+     * @param sourceSize The size of the remote file.
+     * @param fileSize The size of the local file.
+     */
     public DownloadProgressChangedEvent(Object source, URL downloadSource, File downloadPath, 
                                                                            float progressPercentage, long sourceSize, long fileSize) {
         super(source);
