@@ -40,7 +40,7 @@ import java.util.*;
 @SuppressWarnings({"FieldMayBeFinal"})
 public abstract class JWebClient implements Disposeable {
     
-    //<editor-fold defaultstate="collapsed" desc="Properties">
+    //<editor-fold defaultstate="collapsed" desc="Variables">
     /**
      * If a file is to be downloaded, this is the variable that stores its information.
      * @author Beatsleigher
@@ -87,7 +87,7 @@ public abstract class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private List<Object> downloadFileCompletedEventHandlerList;
+    private List<DownloadFileCompletedEventListener> downloadFileCompletedEventHandlerList;
     
     /**
      * This list contains all of the handlers for the onDownloadStringCompletedEvent-events.
@@ -95,7 +95,7 @@ public abstract class JWebClient implements Disposeable {
      * @since 30-09-2014
      * @version 1.0
      */
-    private List<Object> downloadStringCompletedEventHandlerList;
+    private List<DownloadStringCompletedEventListener> downloadStringCompletedEventHandlerList;
     
     /**
      * This... you know what this list contains. If you don't, you really, <i>really</i> shouldn't be looking at this JavaDoc...
@@ -114,7 +114,7 @@ public abstract class JWebClient implements Disposeable {
      * I'll just add this one.
      * @param dlSource The URL (web address) from where to download the file/string/data from.
      * E.G.: "http://yourweb.com/file.txt"
-     * @param dlPath The file to download the file to. This {@see String} object will be converted to a {@see File} object!
+     * @param dlPath The file to download the file to. This {@link String} object will be converted to a {@link File} object!
      * @throws IOException This exception would only be thrown if an idiot provided an invalid URL or put null as a parameter.
      * (If you're that idiot, and you're reading this, please note that there <b>are</b> also other constructors to choose from...)
      * @author Beatsleigher
@@ -159,9 +159,9 @@ public abstract class JWebClient implements Disposeable {
      * 
      * Be careful with this one. It might blow! (Enter awesome movie quote here)
      * @param dlSource The URl (web address) from which to download the file/string/data.
-     * This parameter is a {@see URL} object.
+     * This parameter is a {@link URL} object.
      * @param dlPath The path to download the file to.
-     * This {@see String} object is converted to a {@see File} object. Be careful not to set this to null.
+     * This {@link String} object is converted to a {@link File} object. Be careful not to set this to null.
      * @throws IOException This exception is thrown if you're just being plain stupid.
      * @author Beatsleigher
      * @since 30-09-2014
@@ -181,7 +181,7 @@ public abstract class JWebClient implements Disposeable {
      * 
      * This constructor is the (second) most forgiving constructor in this class!
      * 
-     * This constructor only takes explicit {@see URL} and {@see File} objects.
+     * This constructor only takes explicit {@link URL} and {@link File} objects.
      * @param dlSource The URL (web address) to download the file/string/data from.
      * E.G.: http://yourweb.com/file.txt
      * @param dlPath The path to download the file to.
@@ -241,7 +241,7 @@ public abstract class JWebClient implements Disposeable {
      * C:\Users\User01\Documents\downloadedFile.jpg
      * This method is also present in the different events provided with this class.
      * Use the in-event methods when possible.
-     * @return The download path on this computer as a {@see File} object.
+     * @return The download path on this computer as a {@link File} object.
      * @author Beatsleigher
      * @since 30-09-2014
      * @version 1.0
@@ -249,7 +249,7 @@ public abstract class JWebClient implements Disposeable {
     public File getDownloadPath() { return dlPath; }
     
     /**
-     * Gets and returns the downloaded {@see String} object.
+     * Gets and returns the downloaded {@link String} object.
      * This method should only be accessed when you're sure, that a string has been downloaded.
      * This method is present in the events provided with this class.
      * Use the in-event methods when possible.
@@ -272,14 +272,14 @@ public abstract class JWebClient implements Disposeable {
     public byte[] getDownloadedData() { return downloadedData; }
     
     /**
-     * Sets the {@see URL} object from which to download the file/string/data from.
-     * @param url The {@see URL} object from which to download from.
+     * Sets the {@link URL} object from which to download the file/string/data from.
+     * @param url The {@link URL} object from which to download from.
      */
     public void setDownloadSource(URL url) { this.dlSource = url; }
     
     /**
-     * Sets the {@see File} object to download the file to.
-     * @param path The {@see File} object from which to download the file to.
+     * Sets the {@link File} object to download the file to.
+     * @param path The {@link File} object from which to download the file to.
      */
     public void setDownloadPath(File path) { this.dlPath = path; }
     //</editor-fold>
@@ -335,14 +335,203 @@ public abstract class JWebClient implements Disposeable {
             bufferedIStream.close();
             fileOStream.close();
             bufferedIStream.close();
-            //for (DownloadFinishedEventListener evt : dlFinishedEventList)
-                //evt.onDownloadFinished(new DownloadFinishedEvent(this, dlPath));
+            for (DownloadFileCompletedEventListener evt : this.downloadFileCompletedEventHandlerList)
+                evt.onDownloadFileCompletedEvent(new DownloadFileCompletedEvent(this, dlPath, dlSource));
         }
     }
     
+    protected IOException m_downloadFileAsyncException = null;
+    /**
+     * Downloads a file from the URL provided too the path provided.
+     * This methods runs asynchronously. 
+     * The events will still be fired.
+     * @throws IOException This exception is thrown if something goes wrong during the download.
+     * @author Beatsleigher
+     * @since 1-10-2014
+     * @version 1.0
+     */
+    public void downloadFileAsync() throws IOException {
+        m_downloadFileAsyncException = null;
+        new Thread() {
+            @Override
+            public void run() {
+                HttpURLConnection httpConnect = null;
+                float totalDataRead;
+                BufferedInputStream bufferedIStream = null;
+                FileOutputStream fileOStream = null;
+                BufferedOutputStream bufferedOStream = null;
+                byte[] data = new byte[1024];
+                int i = 0;
+                float progressPercentage = 0;
+                long remoteSize = 0;
+
+                try {
+                    httpConnect = (HttpURLConnection)dlSource.openConnection();
+                    totalDataRead = 0;
+                    remoteSize = httpConnect.getContentLengthLong();
+
+                    bufferedIStream = new BufferedInputStream(httpConnect.getInputStream());
+                    fileOStream = new FileOutputStream(dlPath);
+                    bufferedOStream = new BufferedOutputStream(fileOStream, 1024);
+
+                    // Download file
+                    while ((i = bufferedIStream.read(data, 0, 1024)) >= 0) {
+                        totalDataRead += i;
+                        bufferedOStream.write(data, 0, i);
+                        progressPercentage = (totalDataRead / remoteSize) * 100;
+                        for (DownloadProgressChangedEventListener evt : downloadProgressChangedEventHandlerList)
+                            evt.onDownloadProgressChanged(
+                                    new DownloadProgressChangedEvent(this, dlSource, dlPath, progressPercentage, remoteSize, (long)totalDataRead));
+                    }
+                } catch (IOException ex) {
+                    m_downloadFileAsyncException = ex;
+                } finally {
+                    try {
+                        bufferedIStream.close();
+                        fileOStream.close();
+                        bufferedIStream.close();
+                    } catch (IOException ex) {}
+                    for (DownloadFileCompletedEventListener evt : downloadFileCompletedEventHandlerList)
+                        evt.onDownloadFileCompletedEvent(new DownloadFileCompletedEvent(this, dlPath, dlSource));
+                    interrupt();
+                }
+                interrupt();
+            }
+        }.start();
+        if (m_downloadFileAsyncException != null)
+            throw m_downloadFileAsyncException;
+    }
+    
+    /**
+     * Downloads and saves file from the provided {@link java.net.URL} to a {@link java.lang.String} object
+     * @throws IOException This exception is thrown if something goes wrong during the download.
+     * @author Beatsleigher
+     * @since 01-09-2014
+     * @version 1.0
+     */
+    public void downloadString() throws IOException {
+        BufferedReader reader = null;
+        String line = null;
+        HttpURLConnection connection = null;
+        StringBuilder readData = new StringBuilder();
+        long remoteSize = 0;
+        
+        try {
+            connection = (HttpURLConnection)dlSource.openConnection();
+            reader = new BufferedReader(new InputStreamReader(dlSource.openStream()));
+            remoteSize = connection.getContentLengthLong();
+            
+            while ((line = reader.readLine()) != null) {
+                readData.append(String.format("{0}{1}", line, "\n"));
+                for (DownloadProgressChangedEventListener evt : this.downloadProgressChangedEventHandlerList)
+                    evt.onDownloadProgressChanged(
+                            new DownloadProgressChangedEvent(this, dlSource, null, (readData.toString().length() / remoteSize) * 100, 
+                                    remoteSize, (long)readData.toString().length()));
+            }
+            
+        } finally {
+            connection.disconnect();
+            connection = null;
+            reader.close();
+            reader = null;
+            downloadedString = readData.toString();
+            for (DownloadStringCompletedEventListener evt : this.downloadStringCompletedEventHandlerList)
+                evt.onDownloadStringCompleted(new DownloadStringCompletedEvent(this, dlSource, readData.toString()));
+            readData.delete(0, readData.toString().length());
+        }
+    }
+    
+    protected IOException m_downloadStringAsyncException = null;
+    /**
+     * Downloads a String from the Internet asynchronously via the provided {@link java.net.URL}.
+     * @throws IOException This is exception is thrown if something goes wrong during the download.
+     * @author Beatsleigher
+     * @since 01-09-2014
+     * @version 1.0
+     */
+    public void downloadStringAsync() throws IOException {
+        this.m_downloadStringAsyncException = null;
+        new Thread() {
+            @Override
+            public void run() {
+                BufferedReader reader = null;
+                String line = null;
+                HttpURLConnection connection = null;
+                StringBuilder readData = new StringBuilder();
+                long remoteSize = 0;
+
+                try {
+                    connection = (HttpURLConnection)dlSource.openConnection();
+                    reader = new BufferedReader(new InputStreamReader(dlSource.openStream()));
+                    remoteSize = connection.getContentLengthLong();
+
+                    while ((line = reader.readLine()) != null) {
+                        readData.append(String.format("{0}{1}", line, "\n"));
+                        for (DownloadProgressChangedEventListener evt : downloadProgressChangedEventHandlerList)
+                            evt.onDownloadProgressChanged(
+                                    new DownloadProgressChangedEvent(this, dlSource, null, (readData.toString().length() / remoteSize) * 100, 
+                                            remoteSize, (long)readData.toString().length()));
+                    }
+
+                } catch (IOException ex) {
+                    m_downloadStringAsyncException = ex;
+                } finally {
+                    try {
+                        connection.disconnect();
+                        connection = null;
+                        reader.close();
+                        reader = null;
+                    } catch (IOException ex) {}
+                    downloadedString = readData.toString();
+                    for (DownloadStringCompletedEventListener evt : downloadStringCompletedEventHandlerList)
+                        evt.onDownloadStringCompleted(new DownloadStringCompletedEvent(this, dlSource, readData.toString()));
+                    readData.delete(0, readData.toString().length());
+                    interrupt();
+                }
+                interrupt();
+            }
+        }.start();
+        if (m_downloadStringAsyncException != null)
+            throw m_downloadStringAsyncException;
+    }
+    
+    //<editor-fold defaultstate="collapsed" desc="Overriden Methods">
+    /** 
+     * {@inheritDoc}
+     */
     @Override
     public void dispose() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+    
+    /**
+     * {@inheritDoc}
+     * @param obj
+     * @return 
+     */
+    @Override
+    public boolean equals(Object obj) {
+        return obj.hashCode() == hashCode();
+    }
+
+    /**
+     * {@inheritDoc}
+     * @return 
+     */
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 29 * hash + Objects.hashCode(this.dlPath);
+        hash = 29 * hash + Objects.hashCode(this.dlSource);
+        hash = 29 * hash + Objects.hashCode(this.downloadedString);
+        hash = 29 * hash + Arrays.hashCode(this.downloadedData);
+        hash = 29 * hash + Objects.hashCode(this.downloadProgressChangedEventHandlerList);
+        hash = 29 * hash + Objects.hashCode(this.downloadFileCompletedEventHandlerList);
+        hash = 29 * hash + Objects.hashCode(this.downloadStringCompletedEventHandlerList);
+        hash = 29 * hash + Objects.hashCode(this.downloadDataCompletedEventHandlerList);
+        hash = 29 * hash + Objects.hashCode(this.m_downloadFileAsyncException);
+        return hash;
+    }
+    //</editor-fold>
     
 }

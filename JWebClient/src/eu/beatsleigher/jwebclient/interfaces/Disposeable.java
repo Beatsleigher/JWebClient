@@ -29,6 +29,9 @@ package eu.beatsleigher.jwebclient.interfaces;
  */
 public interface Disposeable {
     
+    /**
+     * Calls all closing methods and prepares object to be finalized.
+     */
     public void dispose();
     
 }

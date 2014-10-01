@@ -29,6 +29,10 @@ package eu.beatsleigher.jwebclient.events;
  */
 public interface DownloadProgressChangedEventListener {
     
+    /**
+     * Event method. Gets called when the progress of a download has changed.
+     * @param evt The {@link EventObject} which contains all the methods and properties about (and for) the occurred event.
+     */
     public void onDownloadProgressChanged(DownloadProgressChangedEvent evt);
     
 }

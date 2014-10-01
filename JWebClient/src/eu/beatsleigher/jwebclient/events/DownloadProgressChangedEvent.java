@@ -59,13 +59,13 @@ public class DownloadProgressChangedEvent extends EventObject {
     
     /**
      * Gets and returns the URL from which the data was downloaded.
-     * @return {@see URL} object containing the web address
+     * @return {@link URL} object containing the web address
      */
     public URL getDownloadSource() { return downloadSource; }
     
     /**
      * Gets and returns the path to where the file is being downloaded.
-     * @return A {@see File} object which represents the file that is being downloaded to the local computer.
+     * @return A {@link File} object which represents the file that is being downloaded to the local computer.
      * @author Beatsleigher
      * @since 30-09-2014
      * @version 1.0
